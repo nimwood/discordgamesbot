@@ -27,9 +27,10 @@ class MafiaGame(object):
 
 		# Helper method that checks the given maxPlayers
 		def check(msg):
-			if msg.content.isdigit:
+			if msg.content.isdigit():
+				print(msg.content)
 				number = int(msg.content)
-				if number >= 3 and number <= 10:
+				if number >= MIN_PLAYERS and number <= MAX_PLAYERS:
 					return True
 			return False
 

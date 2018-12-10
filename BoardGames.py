@@ -8,14 +8,14 @@ from Mafia import MafiaGame
 # The secret string used to get access to the bot
 secret = 'NDQ2OTkyMjM2NjAxOTMzODI0.Ds0Bjg.d2ipHFaswpqlXYqM6mBz_RDayH8'
 
-# Initialises the discord bot
+# Initialises the discord bots
 client = discord.Client()
 
 # Called whenever the bot first starts up and is ready to go
 @client.event
 async def on_ready():
 	print('We have logged in as {0.user}'.format(client))
-	await client.send_message(client.get_channel('512067512230215681'), "Games to play: '$playguess'")
+	await client.send_message(client.get_channel('512067512230215681'), "Games to play: '$playguess', '$playmafia'")
 
 # Called whenever there is a message in the current channel
 @client.event
