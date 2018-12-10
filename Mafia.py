@@ -40,7 +40,7 @@ class MafiaGame(object):
 		self.maxPlayers = maxPlayers
 
 		# Now we need to add a bunch of players to fill up the game
-		playerCount = 1 # one for the host
+		playerCount = 1 # Starts at 1 for the host
 		while playerCount < self.maxPlayers:
 			await self.client.send_message(self.channel, content = "[{}/{}].".format(str(playerCount), str(self.maxPlayers)) +
 				" Add players with [$invite @player]")
@@ -56,15 +56,20 @@ class MafiaGame(object):
 					if len(info) is 2:
 						key = True
 						mention = info[1]
-						userid = mention[2:len(mention) - 1]
+						print(mention)
+
+						# the mention will be in the form <@199549974671917056> or <@!199549974671917056>
+						# if they have a nickname the ! will be added, we need to remove @, ! and <> for the id
+						if mention[2].isdigit():
+							userid = mention[2:len(mention) - 1]
+						else:
+							userid = mention[3:len(mention) - 1]
+
 						await self.client.send_message(self.channel, content = userid)
 
-						url = 'https://discordapp.com/api/users/{}'.format(userid) # Set destination URL here
-						post_fields = {'recipient_id' : userid}     # Set POST fields here
-
-						request = Request(url, urlencode(post_fields).encode())
-						json = urlopen(request).read().decode()
-						print(json)
+						player = await self.client.get_user_info(userid)
+						await self.client.send_message(player, "hey! testing dm")
+						playerCount += 1
 
 						# Now we need to check that the second word is a target person
 					else: # Message received was $invite [something something] not length 2
@@ -72,7 +77,5 @@ class MafiaGame(object):
 				else: # Message didnt start with "$invite "
 					await self.client.send_message(self.channel, content = "Usage: [$invite @player]")
 
-
 	async def play_mafia(self):
 		await self.setup();
-
