@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 MAX_PLAYERS = 10
-MIN_PLAYERS = 3
+MIN_PLAYERS = 4
 gamesChannel = '512067512230215681'
 
 class MafiaGame(object):
@@ -16,14 +16,17 @@ class MafiaGame(object):
 		self.client = client
 		self.host = host
 		self.maxPlayers = MIN_PLAYERS
-		self.players = [self.host]
+		self.players = [self.host] # The host is a Member, and the invitees are Users. Member extends User
+		self.playerIds = [self.host.id]
+		self.playerNames = [self.host.mention] # Contains the mentions
 		self.channel = client.get_channel(gamesChannel)
+		print("host is: {}".format(self.host))
 
 	# Sets up the initial conditions of the game, asks the host how many players they would like
 	# and which players to invite
 	async def setup(self):
 		await self.client.send_message(self.channel, content = "Welcome to Mafia, {},".format(self.host.name) +
-			" please specify the maximum amount of players [3 - 10].")
+			" please specify the maximum amount of players [{} - {}].".format(MIN_PLAYERS, MAX_PLAYERS))
 
 		# Helper method that checks the given maxPlayers
 		def check(msg):
@@ -56,7 +59,6 @@ class MafiaGame(object):
 					if len(info) is 2:
 						key = True
 						mention = info[1]
-						print(mention)
 
 						# the mention will be in the form <@199549974671917056> or <@!199549974671917056>
 						# if they have a nickname the ! will be added, we need to remove @, ! and <> for the id
@@ -65,17 +67,31 @@ class MafiaGame(object):
 						else:
 							userid = mention[3:len(mention) - 1]
 
-						await self.client.send_message(self.channel, content = userid)
-
+						# Get the user info of the player who was mentioned (invited)
 						player = await self.client.get_user_info(userid)
-						await self.client.send_message(player, "hey! testing dm")
+
+						# Before we actually add the player we need to check if they were already added
+						if player.id in self.playerIds:
+							await self.client.send_message(self.channel, content = "Player already in lobby.")
+							continue
+
 						playerCount += 1
+						self.players.append(player)
+						self.playerIds.append(player.id)
+						self.playerNames.append(player.mention)
 
 						# Now we need to check that the second word is a target person
 					else: # Message received was $invite [something something] not length 2
 						await self.client.send_message(self.channel, content = "Usage: [$invite @player]")
 				else: # Message didnt start with "$invite "
 					await self.client.send_message(self.channel, content = "Usage: [$invite @player]")
+
+		# We have reached the maximum amount of players
+		await self.client.send_message(self.channel, content = "[{}/{}].".format(str(playerCount), str(self.maxPlayers)) +
+				" Maximum players reached.")
+		await self.client.send_message(self.channel, content = "Players are: {}".format(self.playerNames))
+
+
 
 	async def play_mafia(self):
 		await self.setup();
