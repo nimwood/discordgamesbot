@@ -6,7 +6,8 @@ from GuessGame import GuessGame
 from Mafia import MafiaGame
 
 # The secret string used to get access to the bot
-secret = input("Enter the secret token: ")
+secretFile = open("secret", "r")
+secret = secretFile.readline()
 
 # Initialises the discord bots
 client = discord.Client()

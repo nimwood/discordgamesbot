@@ -1,30 +1,53 @@
 import os
 import discord
+from random import shuffle
 
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 MAX_PLAYERS = 10
 MIN_PLAYERS = 4
+key = ['D', 'N', 'M', 'I'] # these are the keys of the dictionary
 gamesChannel = '512067512230215681'
 rolesFile = "mafiaroles" # the file contains lines of (#:D,N,M,I)
-roleNames = {'D':'Detective', 'N':'Nurse', 'M':'Mafioso', 'I':'Innocent'}
-roleNamesPlural = {'D':'Detectives', 'N':'Nurses', 'M':'Mafiosos', 'I':'Innocents'}
+roleNames = {key[0]:'Detective', key[1]:'Nurse', key[2]:'Mafioso', key[3]:'Innocent'}
+roleNamesPlural = {key[0]:'Detectives', key[1]:'Nurses', key[2]:'Mafiosos', key[3]:'Innocents'}
+
+class MafiaPlayer(object):
+	"""Represents a single player in a mafia game, cotains user info as well as
+	game information and player state
+	"""
+	def __init__(self, user):
+		self.user = user # User object whcihc contains their id and their mention tag (use this to DM)
+		self.role = 'I' # Character representing what role they are, e.g 'D'
+		self.isAlive = True
+
+	# Returns the player role
+	def get_role(self):
+		return self.role
+
+	# Sets the player's role
+	def set_role(self, role):
+		self.role = role
+		
+	# Sets the player as dead
+	def kill(self):
+		self.isAlive = False
 
 class MafiaGame(object):
 	"""Represents the mafia game, contains all the players in the game
 	Handles game interactions for a single instance of the game
 	"""
 	def __init__(self, client, host):
-		self.client = client
+		self.client = client # this is the bot
 		self.host = host
 		self.maxPlayers = MIN_PLAYERS
+		self.townsPeople = [] # this is a list of MafiaPlayer objects
 		self.players = [self.host] # The host is a Member, and the invitees are Users. Member extends User
 		self.playerIds = [self.host.id]
 		self.playerNames = [self.host.mention] # Contains the mentions
 		self.channel = client.get_channel(gamesChannel)
 		self.roles = {'D':0, 'N':0, 'M':0, 'I':0} # dictionary containing the number of each role e.g. for 5 players {D:0, N:1, M:2, I:2}
-		print("host is: {}".format(self.host))
 
 	# Sets up the initial conditions of the game, asks the host how many players they would like
 	# and which players to invite
@@ -99,7 +122,6 @@ class MafiaGame(object):
 
 	# Sends messages to each player for what their role is
 	async def send_roles(self):
-		key = ['D', 'N', 'M', 'I'] # these are the keys of the dictionary
 		# First we need to read the mafiaroles file to know how many of each role
 		roleInfo = open(rolesFile, 'r')
 		for line in roleInfo: # each line looks like '#:D,N,M,I'
@@ -122,11 +144,27 @@ class MafiaGame(object):
 			else:
 				await self.client.send_message(self.channel, content = "There are {} {}.".format(self.roles[char], roleNamesPlural[char]))
 
+		# fill the list of MafiaPlayers
+		for i in range(self.maxPlayers):
+			self.townsPeople.append(MafiaPlayer(self.players[i]))
+		
+		# Now we need to assign the roles to each player
+		shuffle(self.townsPeople)
+		x = [[i] for i in range(10)]
+		shuffle(x)
 
+		playerPointer = 0 # from 0 to maxPlayers - 1
+		currentRole = 0 # 0 to 3 for D, N, M, I
+		for count in roleCounts: # for each number of each roles
+			for i in range(int(count)):
+				self.townsPeople[playerPointer].role = key[currentRole]
+				playerPointer += 1
 
+			currentRole += 1
 
-
-
+		# Now send messages to each player of their role
+		for player in self.townsPeople:
+			await self.client.send_message(player.user, content = "You are the {}.".format(roleNames[player.role]))
 
 	async def play_mafia(self):
 		await self.setup();
