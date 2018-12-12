@@ -73,45 +73,42 @@ class MafiaGame(object):
 		playerCount = 1 # Starts at 1 for the host
 		while playerCount < self.maxPlayers:
 			await self.client.send_message(self.channel, content = "[{}/{}].".format(str(playerCount), str(self.maxPlayers)) +
-				" Add players with [$invite @player]")
+				" Add players with [$invite @player1 @player2...]")
 
 			# Get the target player
-			key = False
-			while key is False:
+			x = False # valid invite target
+			while x is False:
 				guess = await self.client.wait_for_message(author=self.host)
 				if guess.content.startswith("$invite "):
 
-					# The message has to be in the form of two words
+					# The message has to be in the form '$invite @user1 @user2 @user3...'
 					info = guess.content.split(" ")
-					if len(info) is 2:
-						key = True
-						mention = info[1]
+					info.pop(0) # remove the $invite string leaving only the mentions
 
-						# the mention will be in the form <@199549974671917056> or <@!199549974671917056>
-						# if they have a nickname the ! will be added, we need to remove @, ! and <> for the id
-						if mention[2].isdigit():
-							userid = mention[2:len(mention) - 1]
-						else:
-							userid = mention[3:len(mention) - 1]
+					if len(info) < 1:
+						await self.client.send_message(self.channel, content = "Usage: [$invite @player1 @player2...]")
+					elif len(info) > self.maxPlayers - playerCount: # too many players added
+						await self.client.send_message(self.channel, content = "Too many players.")
+					else:
+						x = True
 
-						# Get the user info of the player who was mentioned (invited)
-						player = await self.client.get_user_info(userid)
+						for i in range(len(info)):
+							mention = info[i]
+							userid = self.strip_id(mention)
 
-						# Before we actually add the player we need to check if they were already added
-						if player.id in self.playerIds:
-							await self.client.send_message(self.channel, content = "Player already in lobby.")
-							continue
+							# Get the user info of the player who was mentioned (invited)
+							player = await self.client.get_user_info(userid)
 
-						playerCount += 1
-						self.players.append(player)
-						self.playerIds.append(player.id)
-						self.playerNames.append(player.mention)
-
-						# Now we need to check that the second word is a target person
-					else: # Message received was $invite [something something] not length 2
-						await self.client.send_message(self.channel, content = "Usage: [$invite @player]")
+							# Before we actually add the player we need to check if they were already added
+							if player.id in self.playerIds:
+								await self.client.send_message(self.channel, content = "{} already in lobby.".format(player.name))
+							else:
+								self.players.append(player)
+								self.playerIds.append(player.id)
+								self.playerNames.append(player.mention)
+								playerCount += 1
 				else: # Message didnt start with "$invite "
-					await self.client.send_message(self.channel, content = "Usage: [$invite @player]")
+					await self.client.send_message(self.channel, content = "Usage: [$invite @player1 @player2...]")
 
 		# We have reached the maximum amount of players
 		await self.client.send_message(self.channel, content = "[{}/{}].".format(str(playerCount), str(self.maxPlayers)) +
@@ -119,6 +116,16 @@ class MafiaGame(object):
 		await self.client.send_message(self.channel, content = "Players are: {}".format(self.playerNames))
 
 		await self.send_roles()
+
+	# converts a <@!199549974671917056> mention tag and returns the id 199549974671917056
+	def strip_id(self, mention):
+		# the mention will be in the form <@199549974671917056> or <@!199549974671917056>
+		# if they have a nickname the ! will be added, we need to remove @, ! and <> for the id
+		if mention[2].isdigit():
+			userid = mention[2:len(mention) - 1]
+		else:
+			userid = mention[3:len(mention) - 1]
+		return userid
 
 	# Sends messages to each player for what their role is
 	async def send_roles(self):
