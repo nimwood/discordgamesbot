@@ -7,6 +7,9 @@ from urllib.request import Request, urlopen
 MAX_PLAYERS = 10
 MIN_PLAYERS = 4
 gamesChannel = '512067512230215681'
+rolesFile = "mafiaroles" # the file contains lines of (#:D,N,M,I)
+roleNames = {'D':'Detective', 'N':'Nurse', 'M':'Mafioso', 'I':'Innocent'}
+roleNamesPlural = {'D':'Detectives', 'N':'Nurses', 'M':'Mafiosos', 'I':'Innocents'}
 
 class MafiaGame(object):
 	"""Represents the mafia game, contains all the players in the game
@@ -20,6 +23,7 @@ class MafiaGame(object):
 		self.playerIds = [self.host.id]
 		self.playerNames = [self.host.mention] # Contains the mentions
 		self.channel = client.get_channel(gamesChannel)
+		self.roles = {'D':0, 'N':0, 'M':0, 'I':0} # dictionary containing the number of each role e.g. for 5 players {D:0, N:1, M:2, I:2}
 		print("host is: {}".format(self.host))
 
 	# Sets up the initial conditions of the game, asks the host how many players they would like
@@ -90,6 +94,37 @@ class MafiaGame(object):
 		await self.client.send_message(self.channel, content = "[{}/{}].".format(str(playerCount), str(self.maxPlayers)) +
 				" Maximum players reached.")
 		await self.client.send_message(self.channel, content = "Players are: {}".format(self.playerNames))
+
+		await self.send_roles()
+
+	# Sends messages to each player for what their role is
+	async def send_roles(self):
+		key = ['D', 'N', 'M', 'I'] # these are the keys of the dictionary
+		# First we need to read the mafiaroles file to know how many of each role
+		roleInfo = open(rolesFile, 'r')
+		for line in roleInfo: # each line looks like '#:D,N,M,I'
+			data = line.split(':') # data is ['#','D,N,M,I']
+			if int(data[0]) is self.maxPlayers:
+				roleCounts = data[1].split(',') # roleCounts is ['D', 'N', 'M', 'I']
+				i = 0
+				for count in roleCounts:
+					self.roles[key[i]] = int(count)
+					i += 1
+
+		# at this point self.roles should be filled up with the correct roles count
+		# we need to let everyone know how many of each role there is
+		i = 0
+		for char in key:
+			if self.roles[char] is 0:
+				await self.client.send_message(self.channel, content = "There are no {}s.".format(roleNames[char])) 
+			elif self.roles[char] is 1:
+				await self.client.send_message(self.channel, content = "There is 1 {}.".format(roleNames[char]))
+			else:
+				await self.client.send_message(self.channel, content = "There are {} {}.".format(self.roles[char], roleNamesPlural[char]))
+
+
+
+
 
 
 
