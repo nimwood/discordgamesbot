@@ -42,7 +42,12 @@ class MafiaGame(object):
 		self.client = client # this is the bot
 		self.host = host
 		self.maxPlayers = MIN_PLAYERS
+
 		self.townsPeople = [] # this is a list of MafiaPlayer objects
+		self.mafiaPeople = [] # this is a list of Mafia players objects
+		self.mafiaNames = [] # this is a list of Mafia player names
+
+
 		self.players = [self.host] # The host is a Member, and the invitees are Users. Member extends User
 		self.playerIds = [self.host.id]
 		self.playerNames = [self.host.mention] # Contains the mentions
@@ -157,14 +162,17 @@ class MafiaGame(object):
 		
 		# Now we need to assign the roles to each player
 		shuffle(self.townsPeople)
-		x = [[i] for i in range(10)]
-		shuffle(x)
 
 		playerPointer = 0 # from 0 to maxPlayers - 1
 		currentRole = 0 # 0 to 3 for D, N, M, I
 		for count in roleCounts: # for each number of each roles
 			for i in range(int(count)):
 				self.townsPeople[playerPointer].role = key[currentRole]
+
+				if currentRole is 2: # if we are the mafias add them to a list
+					self.mafiaPeople.append(self.townsPeople[playerPointer])
+					self.mafiaNames.append(self.townsPeople[playerPointer].user.name)
+
 				playerPointer += 1
 
 			currentRole += 1
@@ -173,5 +181,13 @@ class MafiaGame(object):
 		for player in self.townsPeople:
 			await self.client.send_message(player.user, content = "You are the {}.".format(roleNames[player.role]))
 
+		# Let the mafia know who their team is
+		for player in self.townsPeople:
+			if player.role is 'M':
+				await self.client.send_message(player.user, content = "The Mafia consists of: {}.".format(self.mafiaNames))
+
+
 	async def play_mafia(self):
 		await self.setup();
+
+
