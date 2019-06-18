@@ -47,7 +47,6 @@ class MafiaGame(object):
 		self.mafiaPeople = [] # this is a list of Mafia players objects
 		self.mafiaNames = [] # this is a list of Mafia player names
 
-
 		self.players = [self.host] # The host is a Member, and the invitees are Users. Member extends User
 		self.playerIds = [self.host.id]
 		self.playerNames = [self.host.mention] # Contains the mentions
@@ -187,7 +186,22 @@ class MafiaGame(object):
 				await self.client.send_message(player.user, content = "The Mafia consists of: {}.".format(self.mafiaNames))
 
 
-	async def play_mafia(self):
-		await self.setup();
+	# async def play_mafia(self):
+	# 	await self.setup();
 
+	# async def night_cycle(self):
+
+	# async def day_cycle(self):
+
+	# Checks whether or not the game is over, returns 0 for game not over, 1 for innocents win, 2 for mafia wins
+	def check_game_over(self):
+		innocentCount = len(self.townsPeople) - len(self.mafiaPeople)
+		mafiaCount = len(self.mafiaPeople)
+		if mafiaCount == 0:
+			return 1
+		elif innocentCount <= mafiaCount:
+			return 2
+
+		# Game not over
+		return 0
 

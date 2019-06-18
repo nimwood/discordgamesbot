@@ -8,6 +8,7 @@ from Mafia import MafiaGame
 # The secret string used to get access to the bot
 secretFile = open("secret", "r")
 secret = secretFile.readline()
+squidChannel = '311629818049462273'
 
 # Initialises the discord bots
 client = discord.Client()
@@ -32,6 +33,11 @@ async def on_message(message):
 
 	# Play the mafia game
 	if message.content.startswith('$playmafia'):
+		game = MafiaGame(client, message.author)
+		await game.play_mafia()
+
+	# Play the mafia game
+	if message.content.startswith('$spam'):
 		game = MafiaGame(client, message.author)
 		await game.play_mafia()
 
